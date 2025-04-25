@@ -1,0 +1,79 @@
+version: '3.8'
+
+# This is the services section, where we define the services that will be started by docker-compose.
+services:
+
+  # This is the name of the service. It can be used to refer to this service in other services.
+  mynodeapp:
+    
+    # Here we are using the Dockerfile in the current directory to build the image for the nodejs application.
+    build : . 
+
+    # This is the name of the container, which can be used to refer to this container in other services.
+    container_name: mynodeyml  
+    
+    # Can be used to run the container in interactive mode. ( docker exec -it <image_name> bash )
+    stdin_open: true
+    
+    # This will map the host's port 3000 to the container's port 3000. 
+    # This means that when we access port 3000 on the host machine, it will be forwarded to port 3000 in the container.
+    ports:
+      - "3000:3000"
+
+    # Here Volume is used to mount the current directory to the /app directory in the container.
+    # This allows you to make changes to your code on your host machine and see them reflected in the container without needing to rebuild the image.
+    # It stored in the host machine and whenever after conainer is removed and recreated, it will still have the data if the volume is not removed
+    # This is useful for development purposes, but not recommended for production.
+    volumes:
+      - .:/app
+    
+    # same network name can communicate with each other 
+    networks:
+      - mynetwork
+
+    # This means that the node service will depend on the mongo service.
+    # This means that the node service will only start once the mongo service is up and running.
+    depends_on:
+      - mymongodb
+
+    # This is the command that will be run when the container starts.
+    # This can be used to run a specific command or script.
+    command: ["nodemon" , "main.js"]
+
+  # This mongoDB service name or container name can be used in the nodejs code to connect to the mongoDB database. 
+  mymongodb:
+    image: mongo:latest
+    container_name: mymongodb
+
+    # Here we can use interactive mode to attach to the container's stdin. 
+    stdin_open: true 
+
+    # This will map the host's port 27017 to the container's port 27017. 
+    # This means that when we access port 27017 on the host machine, it will be forwarded to port 27017 in the container.
+    ports:
+      - "27017:27017"
+
+    # Here Volume is used to persist the data in the mongo container.
+    # This allows you to keep the data even if the container is removed.
+    # after remove and recreate the container, it will still have the data if the volume is not removed 
+    volumes:
+      - mongo-data:/data/db 
+    networks:
+      - mynetwork
+
+# It allows container can communicate with each other using the same network name
+# if we don't specify a network, docker-compose will create a default network for us 
+# but we can create our own network with custom settings
+# and use it in our services.
+networks:
+  mynetwork:
+    driver: bridge
+
+# It allows to persist data even if the container is removed
+# and it will be store in the host machine 
+# and whenever after conainer is removed and recreated, it will still have the data if the volume is not removed
+volumes:
+  mongo-data:
+    driver: local 
+    # driver is used to specify the volume driver to use for the volume. 
+    # In this case, we are using the local driver which means that the volume will be stored on the host machine.
